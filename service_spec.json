@@ -1,0 +1,92 @@
+{
+  "serviceName": "astraflow-service",
+  "description": "Employee management microservice with health monitoring",
+  "version": "1.0.0",
+  "framework": "FastAPI",
+  "port": 8080,
+  "endpoints": [
+    {
+      "path": "/health",
+      "method": "GET",
+      "description": "Health check endpoint",
+      "response": {
+        "status": "string",
+        "timestamp": "string",
+        "service": "string"
+      }
+    },
+    {
+      "path": "/employee",
+      "method": "GET",
+      "description": "Get all employees",
+      "response": {
+        "employees": [
+          {
+            "id": "integer",
+            "name": "string",
+            "email": "string",
+            "department": "string",
+            "position": "string"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/employee/{id}",
+      "method": "GET",
+      "description": "Get employee by ID",
+      "parameters": {
+        "id": "integer"
+      },
+      "response": {
+        "id": "integer",
+        "name": "string",
+        "email": "string",
+        "department": "string",
+        "position": "string"
+      }
+    },
+    {
+      "path": "/employee",
+      "method": "POST",
+      "description": "Create new employee",
+      "request": {
+        "name": "string",
+        "email": "string",
+        "department": "string",
+        "position": "string"
+      },
+      "response": {
+        "id": "integer",
+        "name": "string",
+        "email": "string",
+        "department": "string",
+        "position": "string",
+        "created_at": "string"
+      }
+    }
+  ],
+  "dependencies": [
+    "fastapi",
+    "uvicorn[standard]",
+    "pydantic",
+    "python-dotenv"
+  ],
+  "environment_variables": [
+    {
+      "name": "APP_ENV",
+      "description": "Application environment (development/production)",
+      "default": "production"
+    },
+    {
+      "name": "LOG_LEVEL",
+      "description": "Logging level",
+      "default": "INFO"
+    }
+  ],
+  "containerization": {
+    "baseImage": "python:3.10-slim",
+    "exposedPort": 8080,
+    "workdir": "/app"
+  }
+}
