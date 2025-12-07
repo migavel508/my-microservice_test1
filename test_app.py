@@ -1,34 +1,35 @@
+from pydantic import BaseModel, EmailStr
+from typing import Optional, List
 from datetime import datetime
 
-def get_current_month():
-    """
-    Function to get the current month number.
-    Returns:
-        int: Current month as an integer
-    """
-    return datetime.now().month
+class User(BaseModel):
+    """User model"""
+    id: Optional[int] = None
+    first_name: str
+    last_name: str
+    email: EmailStr
+    created_at: Optional[datetime] = datetime.now()
 
-def get_current_year():
-    """
-    Function to get the current year number.
-    Returns:
-        int: Current year as an integer
-    """
-    return datetime.now().year
+    class Config:
+        orm_mode = True
 
-def is_leap_year(year):
-    """
-    Function to check if a year is a leap year or not.
-    Args:
-        year (int): Year to check
-    Returns:
-        bool: True if leap year, False otherwise
-    """
-    if year % 4 != 0:
-        return False
-    elif year % 100 != 0:
-        return True
-    elif year % 400 != 0:
-        return False
-    else:
-        return True
+class Event(BaseModel):
+    """Event model"""
+    id: Optional[int] = None
+    name: str
+    date: datetime
+    location: str
+    creator_id: int
+
+    class Config:
+        orm_mode = True
+
+class Booking(BaseModel):
+    """Booking model"""
+    id: Optional[int] = None
+    user_id: int
+    event_id: int
+    created_at: Optional[datetime] = datetime.now()
+
+    class Config:
+        orm_mode = True
