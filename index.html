@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AstraFlow Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .control-panel {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-danger {
+            background: #ff4757;
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+
+        .status-idle {
+            background: #f0f0f0;
+            color: #666;
+        }
+
+        .status-running {
+            background: #ffd93d;
+            color: #333;
+            animation: pulse 2s infinite;
+        }
+
+        .status-completed {
+            background: #6bcf7f;
+            color: white;
+        }
+
+        .status-error {
+            background: #ff4757;
+            color: white;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        .steps-list {
+            list-style: none;
+        }
+
+        .step-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #ddd;
+            transition: all 0.3s;
+        }
+
+        .step-item.pending {
+            border-left-color: #ddd;
+        }
+
+        .step-item.running {
+            border-left-color: #ffd93d;
+            background: #fffbf0;
+            animation: slideIn 0.3s;
+        }
+
+        .step-item.completed {
+            border-left-color: #6bcf7f;
+            background: #f0fff4;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(-10px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .step-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-weight: bold;
+        }
+
+        .step-item.pending .step-icon {
+            background: #e0e0e0;
+            color: #999;
+        }
+
+        .step-item.running .step-icon {
+            background: #ffd93d;
+            color: #333;
+        }
+
+        .step-item.completed .step-icon {
+            background: #6bcf7f;
+            color: white;
+        }
+
+        .logs-container {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 8px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+
+        .logs-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .logs-container::-webkit-scrollbar-track {
+            background: #2d2d2d;
+        }
+
+        .logs-container::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 4px;
+        }
+
+        .log-line {
+            margin-bottom: 5px;
+        }
+
+        .files-grid {
+            display: grid;
+            gap: 10px;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .file-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .file-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .file-details h4 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .file-details p {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-small {
+            padding: 8px 15px;
+            font-size: 0.9em;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            width: 90%;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-close {
+            font-size: 1.5em;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .code-viewer {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>
+                <span>🌟</span>
+                AstraFlow Dashboard
+            </h1>
+            <p>Multi-Agent Microservice Generator - Control Panel</p>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="stat-files">0</div>
+                <div class="stat-label">Generated Files</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-steps">0/6</div>
+                <div class="stat-label">Steps Completed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-time">--</div>
+                <div class="stat-label">Execution Time</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-status">Idle</div>
+                <div class="stat-label">Status</div>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="main-grid">
+            <!-- Control Panel -->
+            <div class="card">
+                <h2>⚙️ Control Panel</h2>
+                <div class="control-panel">
+                    <button class="btn btn-primary" id="btn-start" onclick="startWorkflow()">
+                        <span>▶️</span> Start Workflow
+                    </button>
+                    <button class="btn btn-secondary" id="btn-refresh" onclick="refreshStatus()">
+                        <span>🔄</span> Refresh
+                    </button>
+                    <button class="btn btn-danger" id="btn-clean" onclick="cleanOutput()">
+                        <span>🗑️</span> Clean Output
+                    </button>
+                </div>
+
+                <h3 style="margin-top: 20px; margin-bottom: 15px; color: #333;">Workflow Steps</h3>
+                <ul class="steps-list" id="steps-list">
+                    <li class="step-item pending">
+                        <div class="step-icon">1</div>
+                        <div>Architect Agent</div>
+                    </li>
+                    <li class="step-item pending">
+                        <div class="step-icon">2</div>
+                        <div>Developer Agent</div>
+                    </li>
+                    <li class="step-item pending">
+                        <div class="step-icon">3</div>
+                        <div>Tester Agent</div>
+                    </li>
+                    <li class="step-item pending">
+                        <div class="step-icon">4</div>
+                        <div>Ops Agent</div>
+                    </li>
+                    <li class="step-item pending">
+                        <div class="step-icon">5</div>
+                        <div>Git Operations</div>
+                    </li>
+                    <li class="step-item pending">
+                        <div class="step-icon">6</div>
+                        <div>Harness Agent</div>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Logs -->
+            <div class="card">
+                <h2>📋 Execution Logs</h2>
+                <div class="logs-container" id="logs-container">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📝</div>
+                        <p>No logs yet. Start the workflow to see execution logs.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Generated Files -->
+        <div class="card">
+            <h2>📦 Generated Files</h2>
+            <div class="files-grid" id="files-grid">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📁</div>
+                    <p>No files generated yet. Run the workflow to generate microservice artifacts.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- File Viewer Modal -->
+    <div class="modal" id="file-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">File Viewer</h2>
+                <span class="modal-close" onclick="closeModal()">✕</span>
+            </div>
+            <div class="code-viewer" id="file-content">
+                Loading...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let updateInterval = null;
+
+        // Start workflow
+        async function startWorkflow() {
+            const btn = document.getElementById('btn-start');
+            btn.disabled = true;
+            btn.innerHTML = '<span>⏳</span> Starting...';
+
+            try {
+                const response = await fetch('/api/start', { method: 'POST' });
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Start polling for updates
+                    if (updateInterval) clearInterval(updateInterval);
+                    updateInterval = setInterval(refreshStatus, 1000);
+                } else {
+                    alert('Error: ' + data.error);
+                    btn.disabled = false;
+                    btn.innerHTML = '<span>▶️</span> Start Workflow';
+                }
+            } catch (error) {
+                alert('Error starting workflow: ' + error);
+                btn.disabled = false;
+                btn.innerHTML = '<span>▶️</span> Start Workflow';
+            }
+        }
+
+        // Refresh status
+        async function refreshStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const status = await response.json();
+
+                updateUI(status);
+
+                // Stop polling if workflow completed or errored
+                if (!status.running && updateInterval) {
+                    clearInterval(updateInterval);
+                    updateInterval = null;
+
+                    const btn = document.getElementById('btn-start');
+                    btn.disabled = false;
+                    btn.innerHTML = '<span>▶️</span> Start Workflow';
+                }
+            } catch (error) {
+                console.error('Error refreshing status:', error);
+            }
+        }
+
+        // Update UI with status
+        function updateUI(status) {
+            // Update stats
+            document.getElementById('stat-files').textContent = status.generated_files.length;
+
+            const completedSteps = status.steps.filter(s => s.status === 'completed').length;
+            document.getElementById('stat-steps').textContent = `${completedSteps}/6`;
+
+            if (status.start_time && status.end_time) {
+                const start = new Date(status.start_time);
+                const end = new Date(status.end_time);
+                const duration = Math.round((end - start) / 1000);
+                document.getElementById('stat-time').textContent = `${duration}s`;
+            } else if (status.start_time) {
+                const start = new Date(status.start_time);
+                const now = new Date();
+                const duration = Math.round((now - start) / 1000);
+                document.getElementById('stat-time').textContent = `${duration}s`;
+            }
+
+            document.getElementById('stat-status').textContent =
+                status.running ? 'Running' :
+                    status.completed ? 'Completed' :
+                        status.error ? 'Error' : 'Idle';
+
+            // Update steps
+            const stepsList = document.getElementById('steps-list');
+            stepsList.innerHTML = status.steps.map((step, index) => `
+                <li class="step-item ${step.status}">
+                    <div class="step-icon">${index + 1}</div>
+                    <div>${step.name}</div>
+                </li>
+            `).join('');
+
+            // Update logs
+            const logsContainer = document.getElementById('logs-container');
+            if (status.logs.length > 0) {
+                logsContainer.innerHTML = status.logs.map(log =>
+                    `<div class="log-line">${escapeHtml(log)}</div>`
+                ).join('');
+                logsContainer.scrollTop = logsContainer.scrollHeight;
+            }
+
+            // Update files
+            if (status.generated_files.length > 0) {
+                updateFilesList(status.generated_files);
+            }
+        }
+
+        // Update files list
+        function updateFilesList(files) {
+            const filesGrid = document.getElementById('files-grid');
+            filesGrid.innerHTML = files.map(file => `
+                <div class="file-item">
+                    <div class="file-info">
+                        <div class="file-icon">📄</div>
+                        <div class="file-details">
+                            <h4>${file.name}</h4>
+                            <p>${file.size_human} • Modified: ${file.modified}</p>
+                        </div>
+                    </div>
+                    <div class="file-actions">
+                        <button class="btn btn-secondary btn-small" onclick="viewFile('${file.name}')">
+                            👁️ View
+                        </button>
+                        <button class="btn btn-primary btn-small" onclick="downloadFile('${file.name}')">
+                            ⬇️ Download
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // View file
+        async function viewFile(filename) {
+            const modal = document.getElementById('file-modal');
+            const title = document.getElementById('modal-title');
+            const content = document.getElementById('file-content');
+
+            title.textContent = filename;
+            content.textContent = 'Loading...';
+            modal.classList.add('active');
+
+            try {
+                const response = await fetch(`/api/files/${filename}`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    content.textContent = data.content;
+                } else {
+                    content.textContent = 'Error: ' + data.error;
+                }
+            } catch (error) {
+                content.textContent = 'Error loading file: ' + error;
+            }
+        }
+
+        // Download file
+        function downloadFile(filename) {
+            window.location.href = `/api/download/${filename}`;
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('file-modal').classList.remove('active');
+        }
+
+        // Clean output
+        async function cleanOutput() {
+            if (!confirm('Are you sure you want to clean all generated files?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/clean', { method: 'POST' });
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert('Output cleaned successfully');
+                    refreshStatus();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error cleaning output: ' + error);
+            }
+        }
+
+        // Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Initial load
+        refreshStatus();
+
+        // Close modal on outside click
+        document.getElementById('file-modal').addEventListener('click', function (e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+
+</html>
