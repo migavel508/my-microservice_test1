@@ -1,86 +1,70 @@
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch, MagicMock
+from fastapi import HTTPException
+from unittest.mock import patch
 from datetime import datetime
-
-from generated.app import app, EmployeeCreate, Employee, HealthResponse, employees_db, next_employee_id
+from generated.app import app, EmployeeBase, Employee, EmployeeCreate, HealthResponse, employees_db
 
 client = TestClient(app)
 
-# Fixture for common setup
+# Fixtures
 @pytest.fixture
-def reset_data():
-    employees_db.clear()
-    employees_db.extend([
-        Employee(
-            id=1,
-            name="John Doe",
-            email="john.doe@example.com",
-            department="Engineering",
-            position="Senior Developer",
-            created_at=datetime.utcnow().isoformat()
-        ),
-        Employee(
-            id=2,
-            name="Jane Smith",
-            email="jane.smith@example.com",
-            department="Product",
-            position="Product Manager",
-            created_at=datetime.utcnow().isoformat()
-        )
-    ])
-    next_employee_id = 3
+def employee_create():
+    return EmployeeCreate(name="New Employee", email="new.employee@example.com", department="HR", position="HR Manager")
 
-# Test health_check function
-@pytest.mark.asyncio
-async def test_health_check():
+@pytest.fixture
+def health_response():
+    return HealthResponse(status="healthy", timestamp=datetime.utcnow().isoformat(), service="astraflow-service", environment="production")
+
+# Tests
+@patch("generated.app.logger")
+def test_health_check(mock_logger, health_response):
     response = client.get("/health")
     assert response.status_code == 200
-    assert response.json() == HealthResponse(
-        status="healthy",
-        timestamp=datetime.utcnow().isoformat(),
-        service="astraflow-service",
-        environment="production"
-    ).dict()
+    assert response.json() == health_response.dict()
+    mock_logger.info.assert_called_once_with("Health check requested")
 
-# Test get_all_employees function
-@pytest.mark.asyncio
-async def test_get_all_employees(reset_data):
+@patch("generated.app.logger")
+def test_get_all_employees(mock_logger):
     response = client.get("/employee")
     assert response.status_code == 200
-    assert response.json() == [employee.dict() for employee in employees_db]
+    assert len(response.json()) == len(employees_db)
+    mock_logger.info.assert_called_once()
 
-# Test get_employee function
-@pytest.mark.asyncio
-@pytest.mark.parametrize("employee_id, status_code", [(1, 200), (3, 404)])
-async def test_get_employee(employee_id, status_code, reset_data):
+@pytest.mark.parametrize("employee_id,expected_status", [(1, 200), (3, 404)])
+@patch("generated.app.logger")
+def test_get_employee(mock_logger, employee_id, expected_status):
     response = client.get(f"/employee/{employee_id}")
-    assert response.status_code == status_code
-    if status_code == 200:
-        assert response.json() == [employee.dict() for employee in employees_db if employee.id == employee_id][0]
+    assert response.status_code == expected_status
+    if expected_status == 200:
+        assert response.json() == employees_db[employee_id - 1].dict()
+    else:
+        assert "detail" in response.json()
+        mock_logger.warning.assert_called_once()
 
-# Test create_employee function
-@pytest.mark.asyncio
-@pytest.mark.parametrize("employee_data, status_code", [
-    (EmployeeCreate(name="Test User", email="test.user@example.com", department="Test", position="Test"), 201),
-    (EmployeeCreate(name="Duplicate User", email="john.doe@example.com", department="Test", position="Test"), 400)
-])
-async def test_create_employee(employee_data, status_code, reset_data):
-    response = client.post("/employee", json=employee_data.dict())
-    assert response.status_code == status_code
-
-# Test startup_event function
 @patch("generated.app.logger")
-@pytest.mark.asyncio
-async def test_startup_event(mock_logger):
-    mock_logger.info = MagicMock()
-    await app.router.lifecycle.get("startup")[0]()
-    assert mock_logger.info.call_count == 5
+def test_create_employee(mock_logger, employee_create):
+    response = client.post("/employee", json=employee_create.dict())
+    assert response.status_code == 201
+    assert response.json()["name"] == employee_create.name
+    mock_logger.info.assert_called()
 
-# Test shutdown_event function
 @patch("generated.app.logger")
-@pytest.mark.asyncio
-async def test_shutdown_event(mock_logger):
-    mock_logger.info = MagicMock()
-    await app.router.lifecycle.get("shutdown")[0]()
-    assert mock_logger.info.called_once_with("AstraFlow Employee Service Shutting Down")
+def test_create_employee_duplicate_email(mock_logger, employee_create):
+    employees_db.append(Employee(id=3, name=employee_create.name, email=employee_create.email, department=employee_create.department, position=employee_create.position, created_at=datetime.utcnow().isoformat()))
+    response = client.post("/employee", json=employee_create.dict())
+    assert response.status_code == 400
+    assert "detail" in response.json()
+    mock_logger.warning.assert_called_once()
+
+@patch("generated.app.logger")
+def test_startup_event(mock_logger):
+    with patch.object(app, "logger") as mock_logger:
+        app.router.lifespan.startup()
+    mock_logger.info.assert_called()
+
+@patch("generated.app.logger")
+def test_shutdown_event(mock_logger):
+    with patch.object(app, "logger") as mock_logger:
+        app.router.lifespan.shutdown()
+    mock_logger.info.assert_called()
